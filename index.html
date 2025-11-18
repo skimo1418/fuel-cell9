@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuel Cell Assembly Simulation</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2d3b8c, #4a5fc1);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+            direction: ltr;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #e0e0e0;
+            margin-bottom: 20px;
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            direction: ltr;
+            text-align: left;
+        }
+        
+        .instructions h3 {
+            color: #ffcc00;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+            line-height: 1.6;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .parts-container {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .assembly-area {
+            flex: 2;
+            min-width: 700px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            min-height: 600px;
+        }
+        
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffcc00;
+            border-bottom: 2px solid #ffcc00;
+            padding-bottom: 10px;
+        }
+        
+        .parts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+        }
+        
+        .part {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            cursor: grab;
+            transition: all 0.3s ease;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 250px;
+            touch-action: none;
+            position: relative;
+        }
+        
+        .part:active {
+            transform: translateY(-5px) scale(1.05);
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .part-icon {
+            width: 150px;
+            height: 150px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: white;
+            border-radius: 10px;
+        }
+        
+        .anode-icon {
+            background: linear-gradient(45deg, #ff4d4d, #ff3333);
+            border: 2px solid #ff6666;
+            box-shadow: 0 0 10px rgba(255, 77, 77, 0.5);
+        }
+        
+        .cathode-icon {
+            background: linear-gradient(45deg, #4d79ff, #3366ff);
+            border: 2px solid #6699ff;
+            box-shadow: 0 0 10px rgba(77, 121, 255, 0.5);
+        }
+        
+        .electrolyte-icon {
+            background: linear-gradient(45deg, #4dff4d, #33cc33);
+            border: 2px solid #66ff66;
+            box-shadow: 0 0 10px rgba(77, 255, 77, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .electrolyte-icon::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 5px,
+                rgba(255, 255, 255, 0.3) 5px,
+                rgba(255, 255, 255, 0.3) 10px
+            );
+        }
+        
+        .circuit-icon {
+            background: linear-gradient(45deg, #666666, #333333);
+            border: 2px solid #999999;
+            box-shadow: 0 0 10px rgba(102, 102, 102, 0.5);
+            position: relative;
+        }
+        
+        .circuit-icon::before {
+            content: "";
+            position: absolute;
+            top: 40%;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: #ffcc00;
+            box-shadow: 0 0 5px #ffcc00;
+        }
+        
+        .circuit-icon::after {
+            content: "";
+            position: absolute;
+            top: 60%;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: #ffcc00;
+            box-shadow: 0 0 5px #ffcc00;
+        }
+        
+        .part-name {
+            font-weight: bold;
+            margin-top: 5px;
+            font-size: 1.3rem;
+            color: #fff;
+        }
+        
+        .fuel-cell {
+            width: 600px;
+            height: 500px;
+            margin: 20px auto;
+            position: relative;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .cell-container {
+            width: 500px;
+            height: 400px;
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .drop-zone {
+            position: absolute;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .drop-zone.highlight {
+            border-color: #ffcc00;
+            background: rgba(255, 204, 0, 0.1);
+        }
+        
+        .drop-zone.filled {
+            border-style: solid;
+            background: rgba(76, 175, 80, 0.1);
+        }
+        
+        .drop-zone.correct {
+            border-color: #4CAF50;
+        }
+        
+        .drop-zone.incorrect {
+            border-color: #ff3333;
+            background: rgba(255, 100, 100, 0.1);
+        }
+        
+        .anode-zone {
+            top: 50px;
+            left: 50px;
+            width: 100px;
+            height: 300px;
+        }
+        
+        .cathode-zone {
+            top: 50px;
+            right: 50px;
+            width: 100px;
+            height: 300px;
+        }
+        
+        .electrolyte-zone {
+            top: 50px;
+            left: 160px;
+            width: 180px;
+            height: 300px;
+        }
+        
+        .circuit-zone {
+            bottom: 30px;
+            left: 50px;
+            width: 400px;
+            height: 60px;
+        }
+        
+        .current-flow {
+            position: absolute;
+            width: 0;
+            height: 8px;
+            background: linear-gradient(to right, #ffcc00, #ff9900);
+            border-radius: 4px;
+            top: 370px;
+            left: 50px;
+            opacity: 0;
+            transition: width 0.5s ease, opacity 0.5s ease;
+            box-shadow: 0 0 15px #ffcc00;
+        }
+        
+        .current-flow.active {
+            width: 400px;
+            opacity: 1;
+            animation: pulse 1.5s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            from { opacity: 0.7; box-shadow: 0 0 10px #ffcc00; }
+            to { opacity: 1; box-shadow: 0 0 25px #ffcc00, 0 0 35px #ff9900; }
+        }
+        
+        .bulb {
+            position: absolute;
+            bottom: 120px;
+            right: 50px;
+            width: 50px;
+            height: 50px;
+            background: #333;
+            border-radius: 50%;
+            border: 2px solid #555;
+            transition: all 0.5s ease;
+        }
+        
+        .bulb.lit {
+            background: #ffcc00;
+            box-shadow: 0 0 25px #ffcc00, 0 0 45px #ff9900;
+            border-color: #ff9900;
+        }
+        
+        .hydrogen-flow, .oxygen-flow {
+            position: absolute;
+            width: 80px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: white;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .hydrogen-flow {
+            top: 170px;
+            left: -90px;
+            background: rgba(255, 100, 100, 0.7);
+            border: 1px solid #ff6666;
+        }
+        
+        .oxygen-flow {
+            top: 170px;
+            right: -90px;
+            background: rgba(100, 100, 255, 0.7);
+            border: 1px solid #6666ff;
+        }
+        
+        .hydrogen-flow.active, .oxygen-flow.active {
+            opacity: 1;
+        }
+        
+        .water-output {
+            position: absolute;
+            bottom: 170px;
+            right: -90px;
+            width: 80px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: white;
+            background: rgba(100, 200, 255, 0.7);
+            border: 1px solid #66ccff;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .water-output.active {
+            opacity: 1;
+        }
+        
+        .controls {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:hover {
+            background: #45a049;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            opacity: 0;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .message.success {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4CAF50;
+            opacity: 1;
+        }
+        
+        .message.error {
+            background: rgba(255, 100, 100, 0.3);
+            border: 1px solid #ff6666;
+            opacity: 1;
+        }
+        
+        .part-in-zone {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .anode-in-zone {
+            background: linear-gradient(45deg, #ff4d4d, #ff3333);
+            border: 2px solid #ff6666;
+            box-shadow: 0 0 10px rgba(255, 77, 77, 0.5);
+        }
+        
+        .cathode-in-zone {
+            background: linear-gradient(45deg, #4d79ff, #3366ff);
+            border: 2px solid #6699ff;
+            box-shadow: 0 0 10px rgba(77, 121, 255, 0.5);
+        }
+        
+        .electrolyte-in-zone {
+            background: linear-gradient(45deg, #4dff4d, #33cc33);
+            border: 2px solid #66ff66;
+            box-shadow: 0 0 10px rgba(77, 255, 77, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .electrolyte-in-zone::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 10px,
+                rgba(255, 255, 255, 0.3) 10px,
+                rgba(255, 255, 255, 0.3) 20px
+            );
+        }
+        
+        .circuit-in-zone {
+            background: linear-gradient(45deg, #666666, #333333);
+            border: 2px solid #999999;
+            box-shadow: 0 0 10px rgba(102, 102, 102, 0.5);
+            position: relative;
+        }
+        
+        .circuit-in-zone::before {
+            content: "";
+            position: absolute;
+            top: 40%;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: #ffcc00;
+            box-shadow: 0 0 5px #ffcc00;
+        }
+        
+        .circuit-in-zone::after {
+            content: "";
+            position: absolute;
+            top: 60%;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: #ffcc00;
+            box-shadow: 0 0 5px #ffcc00;
+        }
+        
+        .component-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.9rem;
+            color: #ffcc00;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 3px 8px;
+            border-radius: 3px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .component-label.show {
+            opacity: 1;
+        }
+        
+        .electron-flow {
+            position: absolute;
+            top: 180px;
+            left: 250px;
+            width: 50px;
+            height: 50px;
+            border: 2px dashed #ffcc00;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .electron-flow.active {
+            opacity: 1;
+            animation: rotate 3s linear infinite;
+        }
+        
+        .electron-flow::before {
+            content: "e⁻";
+            color: #ffcc00;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .ion-flow {
+            position: absolute;
+            width: 8px;
+            height: 0;
+            background: linear-gradient(to bottom, #4dff4d, #33cc33);
+            border-radius: 4px;
+            left: 248px;
+            top: 100px;
+            opacity: 0;
+            transition: height 0.5s ease, opacity 0.5s ease;
+        }
+        
+        .ion-flow.active {
+            height: 200px;
+            opacity: 1;
+            animation: ionPulse 2s infinite alternate;
+        }
+        
+        @keyframes ionPulse {
+            from { opacity: 0.5; box-shadow: 0 0 5px #4dff4d; }
+            to { opacity: 1; box-shadow: 0 0 15px #4dff4d, 0 0 25px #33cc33; }
+        }
+        
+        .fuel-cell-diagram {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .membrane {
+            position: absolute;
+            top: 50px;
+            left: 250px;
+            width: 2px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0.5;
+        }
+        
+        /* شريط النص الجديد في القسم العلوي */
+        .fuel-cell-explanation {
+            width: 100%;
+            margin: 0 auto 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            text-align: center;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.5s ease;
+            max-height: 0;
+            overflow: hidden;
+        }
+        
+        .fuel-cell-explanation.active {
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 200px;
+        }
+        
+        .fuel-cell-explanation h3 {
+            color: #ffcc00;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+        
+        .fuel-cell-explanation p {
+            line-height: 1.6;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+        
+        /* تحسينات للجوال */
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .parts-container, .assembly-area {
+                min-width: 100%;
+            }
+            
+            .fuel-cell {
+                width: 350px;
+                height: 350px;
+            }
+            
+            .cell-container {
+                width: 300px;
+                height: 300px;
+            }
+            
+            .drop-zone {
+                width: 70px;
+            }
+            
+            .anode-zone, .cathode-zone {
+                width: 70px;
+                height: 200px;
+            }
+            
+            .electrolyte-zone {
+                width: 120px;
+                height: 200px;
+                left: 100px;
+            }
+            
+            .circuit-zone {
+                width: 250px;
+            }
+            
+            .current-flow {
+                top: 270px;
+                left: 25px;
+            }
+            
+            .current-flow.active {
+                width: 250px;
+            }
+            
+            .ion-flow {
+                left: 149px;
+                top: 70px;
+            }
+            
+            .ion-flow.active {
+                height: 160px;
+            }
+            
+            .electron-flow {
+                left: 145px;
+            }
+            
+            .membrane {
+                left: 150px;
+                height: 200px;
+            }
+            
+            .bulb {
+                bottom: 90px;
+                right: 30px;
+            }
+            
+            .hydrogen-flow, .oxygen-flow, .water-output {
+                font-size: 0.7rem;
+                width: 60px;
+            }
+            
+            .hydrogen-flow {
+                left: -65px;
+            }
+            
+            .oxygen-flow {
+                right: -65px;
+            }
+            
+            .water-output {
+                right: -65px;
+            }
+            
+            .part {
+                height: 200px;
+                padding: 20px;
+            }
+            
+            .part-icon {
+                width: 120px;
+                height: 120px;
+                font-size: 1.2rem;
+            }
+            
+            .part-name {
+                font-size: 1.1rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .fuel-cell-explanation {
+                padding: 15px;
+            }
+            
+            .fuel-cell-explanation h3 {
+                font-size: 1.1rem;
+            }
+            
+            .fuel-cell-explanation p {
+                fontSize: 0.9rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .fuel-cell {
+                width: 280px;
+                height: 280px;
+            }
+            
+            .cell-container {
+                width: 250px;
+                height: 250px;
+            }
+            
+            .drop-zone {
+                width: 60px;
+            }
+            
+            .anode-zone, .cathode-zone {
+                width: 60px;
+                height: 150px;
+                top: 40px;
+            }
+            
+            .electrolyte-zone {
+                width: 100px;
+                height: 150px;
+                left: 80px;
+                top: 40px;
+            }
+            
+            .circuit-zone {
+                width: 200px;
+                bottom: 20px;
+                left: 25px;
+            }
+            
+            .current-flow {
+                top: 220px;
+                left: 25px;
+            }
+            
+            .current-flow.active {
+                width: 200px;
+            }
+            
+            .ion-flow {
+                left: 124px;
+                top: 50px;
+            }
+            
+            .ion-flow.active {
+                height: 120px;
+            }
+            
+            .electron-flow {
+                left: 120px;
+                top: 130px;
+            }
+            
+            .membrane {
+                left: 125px;
+                height: 150px;
+                top: 40px;
+            }
+            
+            .bulb {
+                bottom: 70px;
+                right: 20px;
+                width: 40px;
+                height: 40px;
+            }
+            
+            .hydrogen-flow, .oxygen-flow, .water-output {
+                font-size: 0.6rem;
+                width: 50px;
+            }
+            
+            .hydrogen-flow {
+                left: -55px;
+                top: 110px;
+            }
+            
+            .oxygen-flow {
+                right: -55px;
+                top: 110px;
+            }
+            
+            .water-output {
+                right: -55px;
+                bottom: 110px;
+            }
+        }
+
+        /* زر تفعيل الصوت */
+        .audio-controls {
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .audio-btn {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .audio-btn:hover {
+            background: #f57c00;
+            transform: translateY(-2px);
+        }
+        
+        .audio-btn:active {
+            transform: translateY(1px);
+        }
+        
+        .audio-enabled {
+            background: #4CAF50;
+        }
+        
+        .sound-test {
+            margin-top: 10px;
+        }
+        
+        .test-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        
+        .sound-status {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #ffcc00;
+        }
+        
+        /* تأثيرات بصرية للنجاح */
+        .confetti {
+            position: fixed;
+            width: 15px;
+            height: 15px;
+            background-color: #f00;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        .sparkle {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background-color: #ff0;
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Fuel Cell Assembly Simulation</h1>
+            <p class="subtitle">Drag and drop components to build a functioning fuel cell and generate electricity</p>
+        </header>
+        
+        <div class="audio-controls">
+            <button class="audio-btn" id="enableAudio">Click here to enable sound</button>
+            <div class="sound-test" id="soundTest" style="display: none;">
+                <p style="margin: 10px 0; color: #ffcc00;">Test sounds:</p>
+                <button class="test-btn" id="testDrag">Test drag sound</button>
+                <button class="test-btn" id="testDrop">Test drop sound</button>
+                <button class="test-btn" id="testSuccess">Test success sound</button>
+                <button class="test-btn" id="testFrustration">Test frustration sound</button>
+            </div>
+            <div class="sound-status" id="soundStatus"></div>
+            <p style="margin-top: 10px; font-size: 0.9rem; color: #ffcc00;">Please enable sound before starting the game</p>
+        </div>
+        
+        <div class="instructions">
+            <h3>How to Use:</h3>
+            <ol>
+                <li>Drag components from the parts area and drop them into any zone in the fuel cell</li>
+                <li>You can place any component in any zone, but the fuel cell will only work when all components are in their correct positions</li>
+                <li>When all components are correctly placed, electric current will flow and the bulb will light up</li>
+                <li>You can reset the simulation at any time using the "Reset Simulation" button</li>
+            </ol>
+        </div>
+        
+        <div class="content">
+            <div class="parts-container">
+                <h2>Fuel Cell Components</h2>
+                <div class="parts-grid">
+                    <div class="part" draggable="true" data-part="anode">
+                        <div class="part-icon anode-icon">ANODE</div>
+                        <div class="part-name">Anode</div>
+                    </div>
+                    <div class="part" draggable="true" data-part="cathode">
+                        <div class="part-icon cathode-icon">CATHODE</div>
+                        <div class="part-name">Cathode</div>
+                    </div>
+                    <div class="part" draggable="true" data-part="electrolyte">
+                        <div class="part-icon electrolyte-icon">ELECTROLYTE</div>
+                        <div class="part-name">Electrolyte</div>
+                    </div>
+                    <div class="part" draggable="true" data-part="circuit">
+                        <div class="part-icon circuit-icon">CIRCUIT</div>
+                        <div class="part-name">External Circuit</div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button id="resetBtn">Reset Simulation</button>
+                </div>
+                
+                <div class="message" id="message">Drag components to the assembly area</div>
+            </div>
+            
+            <div class="assembly-area">
+                <h2>Assembly Area</h2>
+                
+                <!-- شريط النص الجديد في القسم العلوي من قسم التركيب -->
+                <div class="fuel-cell-explanation" id="fuelCellExplanation">
+                    <h3>What is a Fuel Cell?</h3>
+                    <p>A fuel cell is a device that generates electricity through a direct electrochemical reaction, rather than combustion.</p>
+                    <p>Inside the cell, hydrogen reacts with oxygen to produce electricity, a small amount of heat, and water as a clean byproduct.</p>
+                </div>
+                
+                <div class="fuel-cell">
+                    <div class="cell-container">
+                        <div class="fuel-cell-diagram">
+                            <div class="membrane"></div>
+                        </div>
+                        
+                        <div class="drop-zone anode-zone" data-zone="anode"></div>
+                        <div class="drop-zone cathode-zone" data-zone="cathode"></div>
+                        <div class="drop-zone electrolyte-zone" data-zone="electrolyte"></div>
+                        <div class="drop-zone circuit-zone" data-zone="circuit"></div>
+                        
+                        <div class="current-flow" id="currentFlow"></div>
+                        <div class="bulb" id="bulb"></div>
+                        <div class="electron-flow" id="electronFlow"></div>
+                        <div class="ion-flow" id="ionFlow"></div>
+                        
+                        <div class="hydrogen-flow" id="hydrogenFlow">H₂ →</div>
+                        <div class="oxygen-flow" id="oxygenFlow">← O₂</div>
+                        <div class="water-output" id="waterOutput">← H₂O</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const parts = document.querySelectorAll('.part');
+            const dropZones = document.querySelectorAll('.drop-zone');
+            const currentFlow = document.getElementById('currentFlow');
+            const bulb = document.getElementById('bulb');
+            const message = document.getElementById('message');
+            const resetBtn = document.getElementById('resetBtn');
+            const hydrogenFlow = document.getElementById('hydrogenFlow');
+            const oxygenFlow = document.getElementById('oxygenFlow');
+            const waterOutput = document.getElementById('waterOutput');
+            const electronFlow = document.getElementById('electronFlow');
+            const ionFlow = document.getElementById('ionFlow');
+            const fuelCellExplanation = document.getElementById('fuelCellExplanation');
+            const enableAudioBtn = document.getElementById('enableAudio');
+            const soundTest = document.getElementById('soundTest');
+            const testDragBtn = document.getElementById('testDrag');
+            const testDropBtn = document.getElementById('testDrop');
+            const testSuccessBtn = document.getElementById('testSuccess');
+            const testFrustrationBtn = document.getElementById('testFrustration');
+            const soundStatus = document.getElementById('soundStatus');
+            
+            let draggedPart = null;
+            let placedParts = {};
+            const totalParts = 4;
+            let audioEnabled = false;
+            let audioContext = null;
+            
+            // إنشاء سياق الصوت
+            function createAudioContext() {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    console.log('Audio context created successfully');
+                    return true;
+                } catch (error) {
+                    console.error('Failed to create audio context:', error);
+                    soundStatus.textContent = '❌ Browser does not support audio';
+                    return false;
+                }
+            }
+            
+            // إنشاء صوت بسيط
+            function createBeepSound(duration, frequency, volume, type = 'sine') {
+                if (!audioContext) return null;
+                
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = frequency;
+                oscillator.type = type;
+                
+                gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + duration);
+                
+                return oscillator;
+            }
+            
+            // إنشاء صوت مفرقعات (نجاح)
+            function createSuccessSound() {
+                if (!audioContext) return;
+                
+                // سلسلة من النغمات للإشارة إلى النجاح
+                createBeepSound(0.1, 523, 0.2, 'square'); // C5
+                setTimeout(() => {
+                    if (audioEnabled) createBeepSound(0.1, 659, 0.2, 'square'); // E5
+                }, 100);
+                setTimeout(() => {
+                    if (audioEnabled) createBeepSound(0.1, 784, 0.2, 'square'); // G5
+                }, 200);
+                setTimeout(() => {
+                    if (audioEnabled) createBeepSound(0.2, 1047, 0.3, 'square'); // C6
+                }, 300);
+                
+                // تأثيرات إضافية - مفرقعات عشوائية
+                for (let i = 0; i < 8; i++) {
+                    setTimeout(() => {
+                        if (audioEnabled) {
+                            const freq = 200 + Math.random() * 1000;
+                            createBeepSound(0.05 + Math.random() * 0.1, freq, 0.1, 'square');
+                        }
+                    }, 400 + i * 50);
+                }
+            }
+            
+            // إنشاء صوت إحباط
+            function createFrustrationSound() {
+                if (!audioContext) return;
+                
+                // صوت منخفض وممتد للإحباط
+                createBeepSound(0.5, 80, 0.2, 'sawtooth');
+                setTimeout(() => {
+                    if (audioEnabled) createBeepSound(0.3, 60, 0.2, 'sawtooth');
+                }, 300);
+            }
+            
+            // تفعيل الصوت
+            enableAudioBtn.addEventListener('click', function() {
+                if (!audioEnabled) {
+                    if (createAudioContext()) {
+                        audioEnabled = true;
+                        enableAudioBtn.textContent = 'Sound enabled ✓';
+                        enableAudioBtn.classList.add('audio-enabled');
+                        soundTest.style.display = 'block';
+                        soundStatus.textContent = '✅ Sound enabled and ready to use';
+                        console.log('Sound enabled successfully');
+                    }
+                }
+            });
+            
+            // اختبار الأصوات
+            testDragBtn.addEventListener('click', function() {
+                if (audioEnabled) {
+                    createBeepSound(0.1, 300, 0.3);
+                }
+            });
+            
+            testDropBtn.addEventListener('click', function() {
+                if (audioEnabled) {
+                    createBeepSound(0.2, 200, 0.3);
+                }
+            });
+            
+            testSuccessBtn.addEventListener('click', function() {
+                if (audioEnabled) {
+                    createSuccessSound();
+                    createVisualEffects();
+                }
+            });
+            
+            testFrustrationBtn.addEventListener('click', function() {
+                if (audioEnabled) {
+                    createFrustrationSound();
+                }
+            });
+            
+            // تشغيل صوت السحب
+            function playDragSound() {
+                if (audioEnabled) {
+                    createBeepSound(0.1, 300, 0.3);
+                }
+            }
+            
+            // تشغيل صوت الإفلات
+            function playDropSound() {
+                if (audioEnabled) {
+                    createBeepSound(0.2, 200, 0.3);
+                }
+            }
+            
+            // تشغيل صوت التصحيح
+            function playCorrectSound() {
+                if (audioEnabled) {
+                    createBeepSound(0.3, 500, 0.3);
+                }
+            }
+            
+            // تشغيل صوت الخطأ
+            function playIncorrectSound() {
+                if (audioEnabled) {
+                    createBeepSound(0.5, 100, 0.3);
+                }
+            }
+            
+            // تشغيل صوت النجاح
+            function playSuccessSound() {
+                if (audioEnabled) {
+                    createSuccessSound();
+                }
+            }
+            
+            // تشغيل صوت الإحباط
+            function playFrustrationSound() {
+                if (audioEnabled) {
+                    createFrustrationSound();
+                }
+            }
+            
+            // إنشاء تأثيرات بصرية للنجاح
+            function createVisualEffects() {
+                // إنشاء عناصر الكونفيتي
+                for (let i = 0; i < 50; i++) {
+                    setTimeout(() => {
+                        const confetti = document.createElement('div');
+                        confetti.className = 'confetti';
+                        confetti.style.left = Math.random() * 100 + 'vw';
+                        confetti.style.top = '-20px';
+                        confetti.style.backgroundColor = getRandomColor();
+                        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                        document.body.appendChild(confetti);
+                        
+                        // تحريك الكونفيتي
+                        const animation = confetti.animate([
+                            { top: '-20px', opacity: 1, transform: `rotate(${Math.random() * 360}deg)` },
+                            { top: '100vh', opacity: 0, transform: `rotate(${Math.random() * 720}deg)` }
+                        ], {
+                            duration: 1000 + Math.random() * 2000,
+                            easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
+                        });
+                        
+                        animation.onfinish = () => confetti.remove();
+                    }, i * 50);
+                }
+                
+                // إنشاء عناصر اللمعان
+                for (let i = 0; i < 30; i++) {
+                    setTimeout(() => {
+                        const sparkle = document.createElement('div');
+                        sparkle.className = 'sparkle';
+                        sparkle.style.left = Math.random() * 100 + 'vw';
+                        sparkle.style.top = Math.random() * 100 + 'vh';
+                        sparkle.style.backgroundColor = getRandomBrightColor();
+                        document.body.appendChild(sparkle);
+                        
+                        // تحريك اللمعان
+                        const animation = sparkle.animate([
+                            { opacity: 0, transform: 'scale(0)' },
+                            { opacity: 1, transform: 'scale(1.5)' },
+                            { opacity: 0, transform: 'scale(0)' }
+                        ], {
+                            duration: 500 + Math.random() * 1000,
+                            easing: 'ease-out'
+                        });
+                        
+                        animation.onfinish = () => sparkle.remove();
+                    }, i * 100);
+                }
+            }
+            
+            // الحصول على لون عشوائي
+            function getRandomColor() {
+                const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+            
+            // الحصول على لون لامع عشوائي
+            function getRandomBrightColor() {
+                const colors = ['#ffcc00', '#ff9900', '#ff6600', '#ffff00', '#ffcc66', '#ff9966'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+            
+            // إضافة أحداث السحب للأجزاء
+            parts.forEach(part => {
+                part.addEventListener('dragstart', function(e) {
+                    draggedPart = this;
+                    this.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', this.dataset.part);
+                    
+                    // تشغيل صوت السحب
+                    playDragSound();
+                });
+                
+                part.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                });
+                
+                // إضافة دعم اللمس للجوال
+                part.addEventListener('touchstart', handleTouchStart, { passive: false });
+                part.addEventListener('touchmove', handleTouchMove, { passive: false });
+                part.addEventListener('touchend', handleTouchEnd);
+            });
+            
+            // إضافة أحداث السقوط للمناطق
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.classList.add('highlight');
+                });
+                
+                zone.addEventListener('dragleave', function() {
+                    this.classList.remove('highlight');
+                });
+                
+                zone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('highlight');
+                    
+                    const partType = e.dataTransfer.getData('text/plain');
+                    const zoneType = this.dataset.zone;
+                    
+                    placePartInZone(this, partType, zoneType);
+                });
+                
+                // إضافة دعم اللمس لمناطق الإفلات
+                zone.addEventListener('touchmove', handleTouchMove, { passive: false });
+                zone.addEventListener('touchend', handleTouchEnd);
+            });
+            
+            // متغيرات للتعامل مع اللمس
+            let touchDraggedPart = null;
+            let currentTouch = null;
+            
+            // معالجة بدء اللمس
+            function handleTouchStart(e) {
+                e.preventDefault();
+                const part = e.target.closest('.part');
+                if (!part) return;
+                
+                touchDraggedPart = part;
+                currentTouch = e.touches[0];
+                
+                part.classList.add('dragging');
+                
+                // تشغيل صوت السحب
+                playDragSound();
+            }
+            
+            // معالجة حركة اللمس
+            function handleTouchMove(e) {
+                if (!touchDraggedPart) return;
+                e.preventDefault();
+                currentTouch = e.touches[0];
+                
+                // إزالة الـ highlight من جميع المناطق
+                dropZones.forEach(zone => zone.classList.remove('highlight'));
+                
+                // العثور على المنطقة تحت اللمس
+                const dropZone = getDropZoneUnderTouch(currentTouch.clientX, currentTouch.clientY);
+                if (dropZone) {
+                    dropZone.classList.add('highlight');
+                }
+            }
+            
+            // معالجة نهاية اللمس
+            function handleTouchEnd(e) {
+                if (!touchDraggedPart) return;
+                e.preventDefault();
+                
+                // العثور على المنطقة تحت اللمس
+                const dropZone = getDropZoneUnderTouch(currentTouch.clientX, currentTouch.clientY);
+                
+                if (dropZone) {
+                    const partType = touchDraggedPart.dataset.part;
+                    const zoneType = dropZone.dataset.zone;
+                    
+                    placePartInZone(dropZone, partType, zoneType);
+                }
+                
+                // تنظيف
+                touchDraggedPart.classList.remove('dragging');
+                dropZones.forEach(zone => zone.classList.remove('highlight'));
+                touchDraggedPart = null;
+                currentTouch = null;
+            }
+            
+            // الحصول على منطقة الإفلات تحت اللمس
+            function getDropZoneUnderTouch(x, y) {
+                // الحصول على العنصر في إحداثيات اللمس
+                const element = document.elementFromPoint(x, y);
+                if (!element) return null;
+                
+                // العودة إلى drop-zone إذا كان العنصر أو أحد والديه هو drop-zone
+                return element.closest('.drop-zone');
+            }
+            
+            // وضع الجزء في المنطقة
+            function placePartInZone(zone, partType, zoneType) {
+                // تشغيل صوت الإفلات
+                playDropSound();
+                
+                // إضافة الجزء إلى المنطقة
+                zone.classList.add('filled');
+                
+                // إضافة الشكل المناسب للمنطقة
+                const partInZone = document.createElement('div');
+                partInZone.className = `part-in-zone ${partType}-in-zone`;
+                partInZone.textContent = partType.toUpperCase();
+                zone.innerHTML = '';
+                zone.appendChild(partInZone);
+                
+                // إضافة تسمية الجزء
+                const componentLabel = document.createElement('div');
+                componentLabel.className = 'component-label';
+                componentLabel.textContent = partType.toUpperCase();
+                partInZone.appendChild(componentLabel);
+                
+                // التحقق إذا كان الجزء في المكان الصحيح
+                const isCorrect = partType === zoneType;
+                
+                if (isCorrect) {
+                    zone.classList.add('correct');
+                    zone.classList.remove('incorrect');
+                    componentLabel.classList.add('show');
+                    
+                    // تشغيل صوت التصحيح
+                    playCorrectSound();
+                } else {
+                    zone.classList.add('incorrect');
+                    zone.classList.remove('correct');
+                    componentLabel.classList.add('show');
+                    
+                    // تشغيل صوت الخطأ
+                    playIncorrectSound();
+                }
+                
+                // تسجيل الجزء الموضوغ
+                placedParts[zoneType] = {
+                    partType: partType,
+                    isCorrect: isCorrect
+                };
+                
+                // تعطيل الجزء بعد وضعه
+                const partToDisable = touchDraggedPart || draggedPart;
+                if (partToDisable) {
+                    partToDisable.style.opacity = '0.5';
+                    partToDisable.style.cursor = 'default';
+                    partToDisable.draggable = false;
+                }
+                
+                // التحقق إذا تم تركيب جميع الأجزاء
+                const placedCount = Object.keys(placedParts).length;
+                
+                if (placedCount < totalParts) {
+                    showMessage(`${placedCount}/${totalParts} components placed. Keep going!`, false);
+                }
+                
+                // التحقق إذا تم تركيب جميع الأجزاء بشكل صحيح
+                if (placedCount === totalParts) {
+                    checkFuelCellActivation();
+                }
+            }
+            
+            // وظيفة التحقق من تفعيل خلية الوقود
+            function checkFuelCellActivation() {
+                const allCorrect = Object.values(placedParts).every(part => part.isCorrect);
+                
+                if (allCorrect) {
+                    activateFuelCell();
+                    showMessage('Congratulations! You have successfully assembled the fuel cell. Electricity is now flowing and the bulb is lit.', true);
+                    
+                    // تشغيل صوت النجاح والتأثيرات البصرية
+                    playSuccessSound();
+                    createVisualEffects();
+                } else {
+                    showMessage('All components are placed, but the fuel cell is not working correctly. Check the positions and try again.', 'error');
+                    
+                    // تشغيل صوت الإحباط
+                    playFrustrationSound();
+                }
+            }
+            
+            // وظيفة تفعيل خلية الوقود عند التركيب الصحيح
+            function activateFuelCell() {
+                currentFlow.classList.add('active');
+                bulb.classList.add('lit');
+                hydrogenFlow.classList.add('active');
+                oxygenFlow.classList.add('active');
+                waterOutput.classList.add('active');
+                electronFlow.classList.add('active');
+                ionFlow.classList.add('active');
+                fuelCellExplanation.classList.add('active');
+            }
+            
+            // وظيفة عرض الرسائل
+            function showMessage(text, type) {
+                message.textContent = text;
+                message.className = 'message';
+                
+                if (type === true) {
+                    message.classList.add('success');
+                } else if (type === 'error') {
+                    message.classList.add('error');
+                }
+                
+                message.style.opacity = '1';
+            }
+            
+            // إعادة تعيين المحاكاة
+            resetBtn.addEventListener('click', function() {
+                parts.forEach(part => {
+                    part.style.opacity = '1';
+                    part.style.cursor = 'grab';
+                    part.draggable = true;
+                });
+                
+                dropZones.forEach(zone => {
+                    zone.classList.remove('filled', 'correct', 'incorrect', 'highlight');
+                    zone.innerHTML = '';
+                });
+                
+                currentFlow.classList.remove('active');
+                bulb.classList.remove('lit');
+                hydrogenFlow.classList.remove('active');
+                oxygenFlow.classList.remove('active');
+                waterOutput.classList.remove('active');
+                electronFlow.classList.remove('active');
+                ionFlow.classList.remove('active');
+                fuelCellExplanation.classList.remove('active');
+                message.textContent = 'Drag components to the assembly area';
+                message.className = 'message';
+                message.style.opacity = '1';
+                placedParts = {};
+            });
+        });
+    </script>
+</body>
+</html>
